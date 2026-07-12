@@ -18,22 +18,7 @@
         <p class="text-slate-400 text-lg">
           A modular dashboard designed to orchestrate vehicles, drivers, dispatches, maintenance logs, and financial expenses on a single unified platform.
         </p>
-
-        <!-- Fast access credentials -->
-        <div class="space-y-3 pt-4">
-          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">Quick Access Demo Accounts</h3>
-          <div class="grid grid-cols-2 gap-2">
-            <button 
-              v-for="role in demoRoles" 
-              :key="role.email"
-              @click="autofill(role.email)"
-              class="flex flex-col p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-900 transition-all text-left group"
-            >
-              <span class="text-white font-semibold text-xs group-hover:text-indigo-400 transition-colors">{{ role.name }}</span>
-              <span class="text-slate-500 text-[10px] truncate">{{ role.email }}</span>
-            </button>
-          </div>
-        </div>
+        <!-- Fast access credentials removed -->
       </div>
 
       <!-- Right side: Login Form -->
@@ -109,22 +94,9 @@ export default {
     const authStore = useAuthStore();
 
     const email = ref('');
-    const password = ref('password'); // All seeded user passwords are "password"
+    const password = ref('');
     const loading = ref(false);
     const error = ref('');
-
-    const demoRoles = [
-      { name: 'Super Admin', email: 'admin@transitops.com' },
-      { name: 'Fleet Manager', email: 'rahul@transitops.com' },
-      { name: 'Dispatcher', email: 'amit@transitops.com' },
-      { name: 'Accountant', email: 'vikram@transitops.com' },
-      { name: 'Driver', email: 'ravi.kumar@transitops.com' }
-    ];
-
-    const autofill = (demoEmail) => {
-      email.value = demoEmail;
-      password.value = 'password';
-    };
 
     const handleLogin = async () => {
       loading.value = true;
@@ -144,8 +116,6 @@ export default {
       password,
       loading,
       error,
-      demoRoles,
-      autofill,
       handleLogin
     };
   }
