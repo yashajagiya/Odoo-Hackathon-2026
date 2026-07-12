@@ -408,8 +408,10 @@ export default {
       try {
         if (isEditing.value) {
           await axios.put(`/vehicles/${editingId.value}`, form.value);
+          authStore.showToast('Vehicle profile updated successfully.', 'success');
         } else {
           await axios.post('/vehicles', form.value);
+          authStore.showToast('Vehicle registered successfully.', 'success');
         }
         modalOpen.value = false;
         fetchVehicles();
@@ -417,19 +419,25 @@ export default {
         if (err.response?.status === 422) {
           validationErrors.value = err.response.data.errors;
         } else {
-          alert('Failed to save vehicle data.');
+          authStore.showToast('Failed to save vehicle data.', 'error');
         }
       }
     };
 
-    const deleteVehicle = async (id) => {
-      if (!confirm('Are you sure you want to retire/delete this vehicle permanently?')) return;
-      try {
-        await axios.delete(`/vehicles/${id}`);
-        fetchVehicles();
-      } catch (err) {
-        alert('Failed to delete vehicle.');
-      }
+    const deleteVehicle = (id) => {
+      authStore.showConfirm(
+        'Retire Vehicle',
+        'Are you sure you want to retire/delete this vehicle permanently?',
+        async () => {
+          try {
+            await axios.delete(`/vehicles/${id}`);
+            authStore.showToast('Vehicle deleted successfully.', 'success');
+            fetchVehicles();
+          } catch (err) {
+            authStore.showToast('Failed to delete vehicle.', 'error');
+          }
+        }
+      );
     };
 
     const statusClass = (status) => {

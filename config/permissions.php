@@ -54,7 +54,6 @@ return [
             'permissions' => [
                 'trips.view-own',
                 'trips.complete',
-                'dashboard.view',
             ],
         ],
         [

@@ -25,6 +25,17 @@ class TripController extends Controller
     {
         $query = Trip::with(['vehicle', 'driver']);
 
+        // Limit to own trips for drivers
+        $user = $request->user();
+        if ($user && $user->hasPermission('trips.view-own') && !$user->hasPermission('trips.view') && !$user->isSuperAdmin()) {
+            $driver = $user->driver;
+            if ($driver) {
+                $query->where('driver_id', $driver->id);
+            } else {
+                $query->whereNull('id');
+            }
+        }
+
         // Filters
         if ($request->filled('status')) {
             $query->where('status', $request->status);

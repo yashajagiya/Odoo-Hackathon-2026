@@ -44,15 +44,9 @@ const routes = [
                 meta: { permission: 'maintenance.index' }
             },
             {
-                path: 'fuel-logs',
-                name: 'FuelLogs',
-                component: () => import('./views/FuelLogs.vue'),
-                meta: { permission: 'fuel-logs.index' }
-            },
-            {
-                path: 'expenses',
-                name: 'Expenses',
-                component: () => import('./views/Expenses.vue'),
+                path: 'fuel-expenses',
+                name: 'FuelExpenses',
+                component: () => import('./views/FuelExpenses.vue'),
                 meta: { permission: 'expenses.index' }
             },
             {
@@ -60,6 +54,12 @@ const routes = [
                 name: 'Documents',
                 component: () => import('./views/Documents.vue'),
                 meta: { permission: 'documents.index' }
+            },
+            {
+                path: 'settings',
+                name: 'Settings',
+                component: () => import('./views/Settings.vue'),
+                meta: { permission: 'roles.index' }
             }
         ]
     },
@@ -74,19 +74,42 @@ const router = createRouter({
     routes
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore();
+    
+    // If token exists but user profile is not loaded, fetch it first to prevent layout/permission redirect loops
+    if (authStore.token && !authStore.user) {
+        try {
+            await authStore.fetchMe();
+        } catch (err) {
+            authStore.logout();
+            if (to.name !== 'Login') {
+                return next({ name: 'Login' });
+            }
+        }
+    }
     
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
         return next({ name: 'Login' });
     }
     
-    if (to.meta.guestOnly && authStore.isAuthenticated) {
-        return next({ name: 'Dashboard' });
-    }
-    
-    if (to.meta.permission && !authStore.hasPermission(to.meta.permission)) {
-        return next({ name: 'Dashboard' }); // Fallback to dashboard if unauthorized
+    if (authStore.isAuthenticated) {
+        const isOnlyDriver = authStore.hasPermission('trips.view-own') && !authStore.hasPermission('dashboard.view');
+
+        if (to.meta.guestOnly) {
+            return next({ name: isOnlyDriver ? 'Trips' : 'Dashboard' });
+        }
+        
+        if (to.name === 'Dashboard' && !authStore.hasPermission('dashboard.view')) {
+            return next({ name: isOnlyDriver ? 'Trips' : 'Login' });
+        }
+        
+        if (to.meta.permission && !authStore.hasPermission(to.meta.permission)) {
+            if (to.name === 'Trips' && authStore.hasPermission('trips.view-own')) {
+                return next();
+            }
+            return next({ name: isOnlyDriver ? 'Trips' : 'Dashboard' });
+        }
     }
     
     next();

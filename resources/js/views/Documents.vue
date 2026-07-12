@@ -279,20 +279,27 @@ export default {
         });
 
         modalOpen.value = false;
+        authStore.showToast('Document uploaded successfully.', 'success');
         fetchDocuments();
       } catch (err) {
-        alert('Failed to upload document.');
+        authStore.showToast('Failed to upload document.', 'error');
       }
     };
 
-    const deleteDocument = async (id) => {
-      if (!confirm('Are you sure you want to delete this document permanently?')) return;
-      try {
-        await axios.delete(`/vehicle-documents/${id}`);
-        fetchDocuments();
-      } catch (err) {
-        alert('Failed to delete document.');
-      }
+    const deleteDocument = (id) => {
+      authStore.showConfirm(
+        'Delete Document',
+        'Are you sure you want to delete this document permanently?',
+        async () => {
+          try {
+            await axios.delete(`/vehicle-documents/${id}`);
+            authStore.showToast('Document deleted successfully.', 'success');
+            fetchDocuments();
+          } catch (err) {
+            authStore.showToast('Failed to delete document.', 'error');
+          }
+        }
+      );
     };
 
     onMounted(() => {

@@ -404,8 +404,10 @@ export default {
       try {
         if (isEditing.value) {
           await axios.put(`/drivers/${editingId.value}`, form.value);
+          authStore.showToast('Driver profile updated successfully.', 'success');
         } else {
           await axios.post('/drivers', form.value);
+          authStore.showToast('Driver onboarded successfully.', 'success');
         }
         modalOpen.value = false;
         fetchDrivers();
@@ -413,19 +415,25 @@ export default {
         if (err.response?.status === 422) {
           validationErrors.value = err.response.data.errors;
         } else {
-          alert('Failed to save driver.');
+          authStore.showToast('Failed to save driver.', 'error');
         }
       }
     };
 
-    const deleteDriver = async (id) => {
-      if (!confirm('Are you sure you want to suspend/delete this driver permanently?')) return;
-      try {
-        await axios.delete(`/drivers/${id}`);
-        fetchDrivers();
-      } catch (err) {
-        alert('Failed to delete driver.');
-      }
+    const deleteDriver = (id) => {
+      authStore.showConfirm(
+        'Offboard Driver',
+        'Are you sure you want to suspend/delete this driver permanently?',
+        async () => {
+          try {
+            await axios.delete(`/drivers/${id}`);
+            authStore.showToast('Driver offboarded successfully.', 'success');
+            fetchDrivers();
+          } catch (err) {
+            authStore.showToast('Failed to delete driver.', 'error');
+          }
+        }
+      );
     };
 
     const safetyScoreClass = (score) => {

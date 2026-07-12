@@ -17,6 +17,8 @@ export const useAuthStore = defineStore('auth', {
         token: initialToken || null,
         loading: false,
         error: null,
+        toasts: [],
+        confirmModal: null, // { title, message, onConfirm, onCancel }
     }),
 
     getters: {
@@ -119,6 +121,22 @@ export const useAuthStore = defineStore('auth', {
                     this.logout();
                 }
             }
+        },
+
+        showToast(message, type = 'success') {
+            const id = Date.now();
+            this.toasts.push({ id, message, type });
+            setTimeout(() => {
+                this.toasts = this.toasts.filter(t => t.id !== id);
+            }, 4000);
+        },
+
+        showConfirm(title, message, onConfirm, onCancel = null) {
+            this.confirmModal = { title, message, onConfirm, onCancel };
+        },
+
+        clearConfirm() {
+            this.confirmModal = null;
         }
     }
 });
