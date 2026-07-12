@@ -40,6 +40,26 @@
         </select>
 
         <button 
+          @click="exportCSV"
+          class="p-2 py-2 px-3 rounded-xl bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-600 hover:text-white transition-all text-sm flex items-center gap-2 w-full sm:w-auto justify-center"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Export CSV
+        </button>
+
+        <button 
+          @click="exportPDF"
+          class="p-2 py-2 px-3 rounded-xl bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-600 hover:text-white transition-all text-sm flex items-center gap-2 w-full sm:w-auto justify-center"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export PDF
+        </button>
+
+        <button 
           @click="fetchDashboardData"
           class="p-2 py-2 px-3 rounded-xl bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-600 hover:text-white transition-all text-sm flex items-center gap-2 w-full sm:w-auto justify-center"
         >
@@ -195,7 +215,7 @@
 </template>
 
 <script>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import axios from 'axios';
 import { Chart, registerables } from 'chart.js';
 
@@ -220,8 +240,10 @@ export default {
       return Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
-    const fetchDashboardData = async () => {
-      loading.value = true;
+    const fetchDashboardData = async (showLoadingState = true) => {
+      if (showLoadingState) {
+        loading.value = true;
+      }
       try {
         const response = await axios.get('/dashboard', { params: filters.value });
         kpis.value = response.data.data;
@@ -230,7 +252,9 @@ export default {
       } catch (err) {
         console.error('Error fetching dashboard KPIs:', err);
       } finally {
-        loading.value = false;
+        if (showLoadingState) {
+          loading.value = false;
+        }
       }
     };
 
@@ -241,6 +265,25 @@ export default {
 
       const finEl = document.getElementById('financialChart');
       if (finEl && kpis.value) {
+        const ctx = finEl.getContext('2d');
+        
+        // Create vertical glowing gradients
+        const revGrad = ctx.createLinearGradient(0, 0, 0, 300);
+        revGrad.addColorStop(0, 'rgba(16, 185, 129, 0.45)');
+        revGrad.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
+        
+        const fuelGrad = ctx.createLinearGradient(0, 0, 0, 300);
+        fuelGrad.addColorStop(0, 'rgba(244, 63, 94, 0.45)');
+        fuelGrad.addColorStop(1, 'rgba(244, 63, 94, 0.02)');
+        
+        const maintGrad = ctx.createLinearGradient(0, 0, 0, 300);
+        maintGrad.addColorStop(0, 'rgba(249, 115, 22, 0.45)');
+        maintGrad.addColorStop(1, 'rgba(249, 115, 22, 0.02)');
+        
+        const expGrad = ctx.createLinearGradient(0, 0, 0, 300);
+        expGrad.addColorStop(0, 'rgba(139, 92, 246, 0.45)');
+        expGrad.addColorStop(1, 'rgba(139, 92, 246, 0.02)');
+
         financialChart = new Chart(finEl, {
           type: 'bar',
           data: {
@@ -253,12 +296,7 @@ export default {
                 kpis.value.financials.total_maintenance_cost,
                 kpis.value.financials.total_expenses
               ],
-              backgroundColor: [
-                'rgba(16, 185, 129, 0.25)', // Emerald
-                'rgba(244, 63, 94, 0.25)', // Rose
-                'rgba(249, 115, 22, 0.25)', // Orange
-                'rgba(139, 92, 246, 0.25)' // Violet
-              ],
+              backgroundColor: [revGrad, fuelGrad, maintGrad, expGrad],
               borderColor: [
                 'rgb(16, 185, 129)',
                 'rgb(244, 63, 94)',
@@ -323,8 +361,55 @@ export default {
       }
     };
 
+    const exportPDF = () => {
+      window.print();
+    };
+
+    const exportCSV = () => {
+      if (!kpis.value) return;
+      const data = [
+        ['Metric', 'Value'],
+        ['Total Vehicles', kpis.value.vehicles.total],
+        ['Available Vehicles', kpis.value.vehicles.available],
+        ['On Trip Vehicles', kpis.value.vehicles.on_trip],
+        ['In Shop Vehicles', kpis.value.vehicles.in_shop],
+        ['Retired Vehicles', kpis.value.vehicles.retired],
+        ['Active Trips', kpis.value.trips.active],
+        ['Pending Trips', kpis.value.trips.pending],
+        ['Fleet Utilization (%)', kpis.value.fleet_utilization_percent + '%'],
+        ['Gross Operations Revenue (INR)', kpis.value.financials.total_revenue],
+        ['Total Fuel Cost Rollup (INR)', kpis.value.financials.total_fuel_cost],
+        ['Total Maintenance Outflow (INR)', kpis.value.financials.total_maintenance_cost],
+        ['Auxiliary Expenses (INR)', kpis.value.financials.total_expenses],
+        ['Net Operations Margin (INR)', kpis.value.financials.net_profit]
+      ];
+      
+      let csvContent = "data:text/csv;charset=utf-8," 
+        + data.map(e => e.join(",")).join("\n");
+        
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `transitops_report_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    let tickerInterval = null;
+
     onMounted(() => {
-      fetchDashboardData();
+      fetchDashboardData(true);
+      // Start auto-refresh interval ticker every 15 seconds
+      tickerInterval = setInterval(() => {
+        fetchDashboardData(false);
+      }, 15000);
+    });
+
+    onBeforeUnmount(() => {
+      if (tickerInterval) {
+        clearInterval(tickerInterval);
+      }
     });
 
     return {
@@ -332,7 +417,9 @@ export default {
       loading,
       filters,
       fetchDashboardData,
-      formatNumber
+      formatNumber,
+      exportPDF,
+      exportCSV
     };
   }
 }

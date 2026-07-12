@@ -67,15 +67,14 @@
               <td class="py-4 px-6 text-right">
                 <div class="inline-flex items-center gap-2">
                   <!-- Download attachment -->
-                  <a 
-                    :href="doc.download_url" 
-                    target="_blank"
-                    class="p-1.5 rounded-lg bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/20 transition-colors flex items-center justify-center"
+                  <button 
+                    @click="downloadDocument(doc.id, doc.document_type)"
+                    class="p-1.5 rounded-lg bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/20 transition-colors flex items-center justify-center cursor-pointer"
                   >
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                  </a>
+                  </button>
                   <!-- Delete Document -->
                   <button 
                     v-if="hasPermission('documents.delete')"
@@ -302,6 +301,33 @@ export default {
       );
     };
 
+    const downloadDocument = async (id, documentType) => {
+      try {
+        const response = await axios.get(`/vehicle-documents/${id}/download`, {
+          responseType: 'blob'
+        });
+        
+        const contentType = response.headers['content-type'] || 'application/pdf';
+        let extension = 'bin';
+        if (contentType.includes('pdf')) extension = 'pdf';
+        else if (contentType.includes('jpeg') || contentType.includes('jpg')) extension = 'jpg';
+        else if (contentType.includes('png')) extension = 'png';
+        else if (contentType.includes('text')) extension = 'txt';
+        
+        const blob = new Blob([response.data], { type: contentType });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${documentType.replace(/\s+/g, '_')}_document.${extension}`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        authStore.showToast('Failed to download document.', 'error');
+      }
+    };
+
     onMounted(() => {
       fetchDocuments();
     });
@@ -317,7 +343,8 @@ export default {
       openModal,
       handleFileUpload,
       submitForm,
-      deleteDocument
+      deleteDocument,
+      downloadDocument
     };
   }
 }
