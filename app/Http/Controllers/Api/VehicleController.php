@@ -70,7 +70,8 @@ class VehicleController extends Controller
      */
     public function show(Vehicle $vehicle): VehicleResource
     {
-        $vehicle->loadCount('trips');
+        $vehicle->load(['trips', 'maintenanceLogs', 'fuelLogs', 'expenses', 'documents'])
+                ->loadCount('trips');
 
         return new VehicleResource($vehicle);
     }

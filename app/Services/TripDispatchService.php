@@ -11,6 +11,9 @@ use Illuminate\Validation\ValidationException;
 
 class TripDispatchService
 {
+    public function __construct(
+        private ReportAggregationService $reportService
+    ) {}
     /**
      * Dispatch a trip: validate business rules and atomically set statuses.
      *
@@ -18,7 +21,7 @@ class TripDispatchService
      */
     public function dispatch(Trip $trip): Trip
     {
-        return DB::transaction(function () use ($trip) {
+        $result = DB::transaction(function () use ($trip) {
             // Lock vehicle and driver rows to prevent race conditions
             $vehicle = $trip->vehicle()->lockForUpdate()->first();
             $driver = $trip->driver()->lockForUpdate()->first();
@@ -78,6 +81,11 @@ class TripDispatchService
 
             return $trip->fresh(['vehicle', 'driver']);
         });
+
+        // Invalidate dashboard/report caches after status change
+        $this->reportService->clearReportCaches();
+
+        return $result;
     }
 
     /**
@@ -88,7 +96,7 @@ class TripDispatchService
      */
     public function complete(Trip $trip, array $completionData): Trip
     {
-        return DB::transaction(function () use ($trip, $completionData) {
+        $result = DB::transaction(function () use ($trip, $completionData) {
             $vehicle = $trip->vehicle()->lockForUpdate()->first();
             $driver = $trip->driver()->lockForUpdate()->first();
 
@@ -120,6 +128,11 @@ class TripDispatchService
 
             return $trip->fresh(['vehicle', 'driver']);
         });
+
+        // Invalidate dashboard/report caches after status change
+        $this->reportService->clearReportCaches();
+
+        return $result;
     }
 
     /**
@@ -129,7 +142,7 @@ class TripDispatchService
      */
     public function cancel(Trip $trip): Trip
     {
-        return DB::transaction(function () use ($trip) {
+        $result = DB::transaction(function () use ($trip) {
             $vehicle = $trip->vehicle()->lockForUpdate()->first();
             $driver = $trip->driver()->lockForUpdate()->first();
 
@@ -153,5 +166,10 @@ class TripDispatchService
 
             return $trip->fresh(['vehicle', 'driver']);
         });
+
+        // Invalidate dashboard/report caches after status change
+        $this->reportService->clearReportCaches();
+
+        return $result;
     }
 }

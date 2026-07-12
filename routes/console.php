@@ -15,4 +15,4 @@ Artisan::command('inspire', function () {
 */
 
 // Check driver license expiry daily at 8:00 AM
-Schedule::command('licenses:check-expiry')->dailyAt('08:00')->withoutOverlapping();
+Schedule::command('compliance:verify-licenses')->dailyAt('08:00')->withoutOverlapping();

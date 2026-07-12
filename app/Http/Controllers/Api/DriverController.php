@@ -50,7 +50,7 @@ class DriverController extends Controller
 
         $perPage = $request->get('per_page', 15);
 
-        return DriverResource::collection($query->paginate($perPage));
+        return DriverResource::collection($query->withCount('trips')->paginate($perPage));
     }
 
     /**
@@ -71,7 +71,7 @@ class DriverController extends Controller
      */
     public function show(Driver $driver): DriverResource
     {
-        return new DriverResource($driver->load('user'));
+        return new DriverResource($driver->load(['user', 'trips']));
     }
 
     /**
